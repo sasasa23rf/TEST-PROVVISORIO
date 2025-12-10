@@ -12,9 +12,8 @@ const io = new Server(server, {
   }
 });
 
-// Simple health check endpoint
 app.get('/', (req, res) => {
-  res.send('Joystick Server is running!');
+  res.sendFile(__dirname + '/index.html');
 });
 
 io.on('connection', (socket) => {
