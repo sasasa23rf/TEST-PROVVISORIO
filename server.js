@@ -3,20 +3,24 @@ const app = express();
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
-const io = new Server(server);
 
+// Enable CORS for local HTML file
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Simple health check endpoint
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
+  res.send('Joystick Server is running!');
 });
 
 io.on('connection', (socket) => {
   console.log('a user connected');
 
-  // Receive joystick data from the client (Right side logic source)
   socket.on('joystick_command', (msg) => {
-    // Send it back to the client (Left side logic destination)
-    // We broadcast to everyone or just emit back. 
-    // The requirement says "server must send it back to the index page".
     io.emit('server_echo', msg);
   });
 
