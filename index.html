@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joystick Telemetry System</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --text-color: #e2e8f0;
+            --accent-color: #38bdf8;
+            --accent-secondary: #818cf8;
+            --btn-active: #22c55e;
+            --btn-inactive: #334155;
+            --border-color: rgba(148, 163, 184, 0.2);
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            /* Removed overflow: hidden to allow scrolling if needed */
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .panel {
+            flex: 1;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-right: 1px solid var(--border-color);
+            position: relative;
+            overflow-y: auto;
+            /* Enable vertical scrolling */
+        }
+
+        .panel:last-child {
+            border-right: none;
+        }
+
+        .panel-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 1.5rem;
+            background: linear-gradient(45deg, var(--accent-color), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .panel-header p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Controller Visualizer */
+        .controller-wrapper {
+            background: var(--panel-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border-color);
+            width: 400px;
+            height: 250px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .controller-body {
+            width: 360px;
+            height: 200px;
+            background: #1e293b;
+            border-radius: 40px;
+            position: relative;
+            border: 2px solid #334155;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Buttons generic */
+        .btn {
+            position: absolute;
+            background: var(--btn-inactive);
+            border: 1px solid #475569;
+            transition: all 0.1s ease;
+        }
+
+        .btn.active {
+            background: var(--btn-active);
+            box-shadow: 0 0 10px var(--btn-active);
+            border-color: #86efac;
+            transform: scale(0.95);
+        }
+
+        /* D-Pad */
+        .dpad-area {
+            position: absolute;
+            top: 60px;
+            left: 40px;
+            width: 90px;
+            height: 90px;
+        }
+
+        .dpad-u {
+            top: 0;
+            left: 30px;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .dpad-d {
+            bottom: 0;
+            left: 30px;
+            width: 30px;
+            height: 30px;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .dpad-l {
+            top: 30px;
+            left: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .dpad-r {
+            top: 30px;
+            right: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .dpad-c {
+            top: 30px;
+            left: 30px;
+            width: 30px;
+            height: 30px;
+            background: #1e293b;
+            border: none;
+        }
+
+        /* Face Buttons */
+        .face-area {
+            position: absolute;
+            top: 60px;
+            right: 40px;
+            width: 90px;
+            height: 90px;
+        }
+
+        .face-btn {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+        }
+
+        .face-u {
+            top: 0;
+            left: 32.5px;
+            background: #334155;
+        }
+
+        /* Triangle */
+        .face-d {
+            bottom: 0;
+            left: 32.5px;
+            background: #334155;
+        }
+
+        /* X */
+        .face-l {
+            top: 32.5px;
+            left: 0;
+            background: #334155;
+        }
+
+        /* Square */
+        .face-r {
+            top: 32.5px;
+            right: 0;
+            background: #334155;
+        }
+
+        /* Circle */
+
+        /* Shoulders */
+        .shoulder-l1 {
+            top: -10px;
+            left: 40px;
+            width: 80px;
+            height: 20px;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .shoulder-r1 {
+            top: -10px;
+            right: 40px;
+            width: 80px;
+            height: 20px;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .shoulder-l2 {
+            top: -25px;
+            left: 45px;
+            width: 70px;
+            height: 15px;
+            border-radius: 5px 5px 0 0;
+            z-index: -1;
+        }
+
+        .shoulder-r2 {
+            top: -25px;
+            right: 45px;
+            width: 70px;
+            height: 15px;
+            border-radius: 5px 5px 0 0;
+            z-index: -1;
+        }
+
+        /* Middle Buttons */
+        .meta-select {
+            top: 90px;
+            left: 140px;
+            width: 25px;
+            height: 10px;
+            border-radius: 5px;
+            transform: rotate(20deg);
+        }
+
+        .meta-start {
+            top: 90px;
+            right: 140px;
+            width: 25px;
+            height: 10px;
+            border-radius: 5px;
+            transform: rotate(-20deg);
+        }
+
+        /* Analogs */
+        .analog-area {
+            position: absolute;
+            bottom: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #0f172a;
+            border: 1px solid #334155;
+        }
+
+        .analog-l {
+            left: 100px;
+        }
+
+        .analog-r {
+            right: 100px;
+        }
+
+        .analog-stick {
+            width: 40px;
+            height: 40px;
+            background: #475569;
+            border-radius: 50%;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: transform 0.05s linear;
+            /* Smooth but fast for analogs */
+        }
+
+        .analog-stick.pressed {
+            background: #64748b;
+        }
+
+        /* Raw Data Display */
+        .data-display {
+            margin-top: 2rem;
+            width: 100%;
+            max-width: 400px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 10px;
+            height: 200px;
+            overflow-y: auto;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ef4444;
+            /* Red default */
+            box-shadow: 0 0 10px #ef4444;
+        }
+
+        .status-indicator.connected {
+            background-color: #22c55e;
+            box-shadow: 0 0 10px #22c55e;
+        }
+
+        /* Latency Timer */
+        .latency-timer {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--accent-color);
+            border-radius: 15px;
+            padding: 1rem 2rem;
+            font-family: 'Courier New', monospace;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+            z-index: 1000;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .latency-timer.measuring {
+            border-color: #fbbf24;
+            color: #fbbf24;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+        }
+
+        /* Ping Button */
+        .ping-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: transparent;
+            border: 3px solid var(--accent-color);
+            color: var(--accent-color);
+            margin-top: 20px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+            transition: all 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            text-align: center;
+            text-transform: uppercase;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .ping-btn::after {
+            content: 'TEST';
+            font-size: 0.7rem;
+        }
+
+        .ping-btn:hover {
+            background: var(--accent-color);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+
+        /* Illuminated state */
+        .ping-btn.active {
+            background: var(--accent-color);
+            color: #000;
+            box-shadow: 0 0 25px var(--accent-color);
+            transform: scale(0.95);
+        }
+
+        .ping-btn:hover:not(.active) {
+            background: rgba(56, 189, 248, 0.1);
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- Receiver Panel (From Server) -->
+        <div class="panel" id="receiver-panel">
+            <div class="panel-header">
+                <h2>Server Receiver</h2>
+                <p>Data received from WebSocket</p>
+            </div>
+            <div class="controller-wrapper">
+                <div class="controller-body" id="ctrl-recv">
+                    <!-- Shoulders -->
+                    <div class="btn shoulder-l1" data-btn="4"></div>
+                    <div class="btn shoulder-r1" data-btn="5"></div>
+                    <div class="btn shoulder-l2" data-btn="6"></div>
+                    <div class="btn shoulder-r2" data-btn="7"></div>
+
+                    <!-- Dpad -->
+                    <div class="dpad-area">
+                        <div class="btn dpad-u" data-btn="12"></div>
+                        <div class="btn dpad-d" data-btn="13"></div>
+                        <div class="btn dpad-l" data-btn="14"></div>
+                        <div class="btn dpad-r" data-btn="15"></div>
+                        <div class="dpad-c"></div>
+                    </div>
+
+                    <!-- Face Btns -->
+                    <div class="face-area">
+                        <div class="btn face-btn face-u" data-btn="3"></div> <!-- Triangle -->
+                        <div class="btn face-btn face-d" data-btn="0"></div> <!-- Cross -->
+                        <div class="btn face-btn face-l" data-btn="2"></div> <!-- Square -->
+                        <div class="btn face-btn face-r" data-btn="1"></div> <!-- Circle -->
+                    </div>
+
+                    <!-- Middle -->
+                    <div class="btn meta-select" data-btn="8"></div>
+                    <div class="btn meta-start" data-btn="9"></div>
+
+                    <!-- Analogs -->
+                    <div class="analog-area analog-l">
+                        <div class="analog-stick" id="stick-l-recv" data-btn="10"></div>
+                    </div>
+                    <div class="analog-area analog-r">
+                        <div class="analog-stick" id="stick-r-recv" data-btn="11"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Passive Ping Button (Receiver) -->
+            <div id="recv-ping-btn" class="ping-btn" style="pointer-events: none; opacity: 0.7;">
+            </div>
+
+            <div class="data-display" id="data-recv">Waiting for data...</div>
+        </div>
+
+        <!-- Sender Panel (Local Input) -->
+        <div class="panel" id="sender-panel">
+            <div class="status-indicator" id="gamepad-status"></div>
+            <div class="panel-header">
+                <h2>Local Input</h2>
+                <p>Connect a Gamepad & Press Buttons</p>
+            </div>
+            <div class="controller-wrapper">
+                <div class="controller-body" id="ctrl-send">
+                    <!-- Shoulders -->
+                    <div class="btn shoulder-l1" data-btn="4"></div>
+                    <div class="btn shoulder-r1" data-btn="5"></div>
+                    <div class="btn shoulder-l2" data-btn="6"></div>
+                    <div class="btn shoulder-r2" data-btn="7"></div>
+
+                    <!-- Dpad -->
+                    <div class="dpad-area">
+                        <div class="btn dpad-u" data-btn="12"></div>
+                        <div class="btn dpad-d" data-btn="13"></div>
+                        <div class="btn dpad-l" data-btn="14"></div>
+                        <div class="btn dpad-r" data-btn="15"></div>
+                        <div class="dpad-c"></div>
+                    </div>
+
+                    <!-- Face Btns -->
+                    <div class="face-area">
+                        <div class="btn face-btn face-u" data-btn="3"></div> <!-- Triangle -->
+                        <div class="btn face-btn face-d" data-btn="0"></div> <!-- Cross -->
+                        <div class="btn face-btn face-l" data-btn="2"></div> <!-- Square -->
+                        <div class="btn face-btn face-r" data-btn="1"></div> <!-- Circle -->
+                    </div>
+
+                    <!-- Middle -->
+                    <div class="btn meta-select" data-btn="8"></div>
+                    <div class="btn meta-start" data-btn="9"></div>
+
+                    <!-- Analogs -->
+                    <div class="analog-area analog-l">
+                        <div class="analog-stick" id="stick-l-send" data-btn="10"></div>
+                    </div>
+                    <div class="analog-area analog-r">
+                        <div class="analog-stick" id="stick-r-send" data-btn="11"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Ping Button -->
+            <button id="manual-ping-btn" class="ping-btn">
+            </button>
+
+            <div class="data-display" id="data-send">Connect joystick...</div>
+        </div>
+    </div>
+
+    <!-- Latency Timer -->
+    <div class="latency-timer" id="latency-timer" style="display: none;">
+        0 ms
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // Connect to Render server
+        const socket = io('https://test-provvisorio.onrender.com');
+
+        // --- Gamepad Logic ---
+        let gamepads = {};
+
+        // --- Latency Timer Logic ---
+        let latencyStartTime = null;
+        let latencyTimeout = null;
+        let lastButtonState = null;
+
+        window.addEventListener("gamepadconnected", (e) => {
+            console.log("Gamepad connected at index %d: %s. %d buttons, %d axes.",
+                e.gamepad.index, e.gamepad.id,
+                e.gamepad.buttons.length, e.gamepad.axes.length);
+            document.getElementById('gamepad-status').classList.add('connected');
+            document.getElementById('data-send').innerText = `Connected: ${e.gamepad.id}`;
+            scanGamepads();
+        });
+
+        window.addEventListener("gamepaddisconnected", (e) => {
+            console.log("Gamepad disconnected from index %d: %s",
+                e.gamepad.index, e.gamepad.id);
+            document.getElementById('gamepad-status').classList.remove('connected');
+            document.getElementById('data-send').innerText = `Disconnected`;
+        });
+
+        function updateControllerUI(containerId, state) {
+            const container = document.getElementById(containerId);
+            if (!container || !state) return;
+
+            // D-pad from axes handling
+            // Many controllers report D-pad as axes instead of buttons
+            // Common mappings:
+            // - axes[4], axes[5] for some controllers
+            // - axes[6], axes[7] for others 
+            // - axes[9] as a single "hat" axis for PS2 adapters
+            let dpadFromAxes = { up: false, down: false, left: false, right: false };
+
+            if (state.axes) {
+                // Check for hat switch (single axis with discrete values)
+                // Values: -1 = up, -0.71 = up-right, -0.43 = right, -0.14 = down-right
+                //         0.14 = down, 0.43 = down-left, 0.71 = left, 1 = up-left
+                // NEUTRAL is often a high value like 3.28 - we must ignore values outside -1.1 to 1.1
+                for (let i = 4; i < state.axes.length; i++) {
+                    const axisVal = state.axes[i];
+
+                    // Hat switch detection (axis 9 on many adapters)
+                    // Only process if value is in valid range (-1.1 to 1.1)
+                    if (i >= 9 && axisVal >= -1.1 && axisVal <= 1.1) {
+                        if (axisVal >= -1.0 && axisVal < -0.85) { dpadFromAxes.up = true; }
+                        else if (axisVal >= -0.85 && axisVal < -0.55) { dpadFromAxes.up = true; dpadFromAxes.right = true; }
+                        else if (axisVal >= -0.55 && axisVal < -0.25) { dpadFromAxes.right = true; }
+                        else if (axisVal >= -0.25 && axisVal < 0.05) { dpadFromAxes.right = true; dpadFromAxes.down = true; }
+                        else if (axisVal >= 0.05 && axisVal < 0.25) { dpadFromAxes.down = true; }
+                        else if (axisVal >= 0.25 && axisVal < 0.55) { dpadFromAxes.down = true; dpadFromAxes.left = true; }
+                        else if (axisVal >= 0.55 && axisVal < 0.85) { dpadFromAxes.left = true; }
+                        else if (axisVal >= 0.85 && axisVal <= 1.1) { dpadFromAxes.left = true; dpadFromAxes.up = true; }
+                    }
+                    // Standard two-axis D-pad (axes 4/5 or 6/7)
+                    else if (i === 4 || i === 6) {
+                        if (axisVal < -0.5) dpadFromAxes.left = true;
+                        if (axisVal > 0.5) dpadFromAxes.right = true;
+                    }
+                    else if (i === 5 || i === 7) {
+                        if (axisVal < -0.5) dpadFromAxes.up = true;
+                        if (axisVal > 0.5) dpadFromAxes.down = true;
+                    }
+                }
+            }
+
+            // Buttons
+            const buttons = container.querySelectorAll('.btn');
+            buttons.forEach(btn => {
+                const btnIndex = parseInt(btn.getAttribute('data-btn'));
+                let isPressed = state.buttons[btnIndex] && state.buttons[btnIndex].pressed;
+
+                // Override with D-pad from axes if applicable
+                if (btnIndex === 12 && dpadFromAxes.up) isPressed = true;
+                if (btnIndex === 13 && dpadFromAxes.down) isPressed = true;
+                if (btnIndex === 14 && dpadFromAxes.left) isPressed = true;
+                if (btnIndex === 15 && dpadFromAxes.right) isPressed = true;
+
+                if (isPressed) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Analogs Buttons (L3/R3 are part of buttons loop usually, handled above)
+            // Analog Sticks position
+            const stickL = container.querySelector('[id^="stick-l"]');
+            const stickR = container.querySelector('[id^="stick-r"]');
+
+            if (stickL && state.axes && state.axes.length > 1) {
+                // Axes 0, 1
+                const x = state.axes[0] * 20; // max 20px offset
+                const y = state.axes[1] * 20;
+                stickL.style.transform = `translate(${x}px, ${y}px)`;
+                // L3 press visualization
+                if (state.buttons[10] && state.buttons[10].pressed) stickL.classList.add('pressed');
+                else stickL.classList.remove('pressed');
+            }
+
+            if (stickR && state.axes && state.axes.length > 3) {
+                // Axes 2, 3
+                const x = state.axes[2] * 20;
+                const y = state.axes[3] * 20;
+                stickR.style.transform = `translate(${x}px, ${y}px)`;
+                // R3 press visualization
+                if (state.buttons[11] && state.buttons[11].pressed) stickR.classList.add('pressed');
+                else stickR.classList.remove('pressed');
+            }
+        }
+
+        // --- Loop ---
+        function scanGamepads() {
+            const navGamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+
+            // Assume Player 1 is index 0
+            const gp = navGamepads[0];
+
+            if (gp) {
+                // Construct a Serializable State Object
+                const state = {
+                    buttons: gp.buttons.map(b => ({ pressed: b.pressed, value: b.value })),
+                    axes: [...gp.axes],
+                    timestamp: gp.timestamp
+                };
+
+                // 1. Update Sender UI
+                updateControllerUI('ctrl-send', state);
+
+                // --- Latency Start Logic ---
+                // Check if any button changed to PRESSED state compared to last frame
+                const currentPressed = state.buttons.some(b => b.pressed);
+                const lastPressed = (lastButtonState && lastButtonState.buttons) ? lastButtonState.buttons.some(b => b.pressed) : false;
+
+                // Also check axes for movement (threshold 0.5)
+                const currentAxesMoved = state.axes.some(a => Math.abs(a) > 0.5);
+                const lastAxesMoved = lastButtonState ? lastButtonState.axesMoved : false;
+
+                // If a NEW input is detected (button press or axis move)
+                if ((currentPressed && !lastPressed) || (currentAxesMoved && !lastAxesMoved)) {
+                    // Reset timer display immediately
+                    const timerEl = document.getElementById('latency-timer');
+                    timerEl.style.display = 'block';
+                    timerEl.innerText = '...';
+                    timerEl.classList.add('measuring');
+
+                    // Mark start time
+                    state.latencyStart = Date.now();
+
+                    // Clear previous timeout if any
+                    if (latencyTimeout) clearTimeout(latencyTimeout);
+                }
+
+                // Store state for next frame
+                lastButtonState = {
+                    buttons: state.buttons.map(b => ({ pressed: b.pressed })),
+                    axesMoved: currentAxesMoved
+                };
+
+                // Update text debug
+                const pressedButtons = state.buttons.map((b, i) => b.pressed ? i : null).filter(i => i !== null);
+                document.getElementById('data-send').innerHTML = `
+                Sending to Server...<br>
+                Timestamp: ${state.timestamp.toFixed(2)}<br>
+                Axes: [${state.axes.map(a => a.toFixed(2)).join(', ')}]<br>
+                Pressed: ${pressedButtons.join(', ')}
+                `;
+
+                // 2. Send to Server
+                socket.emit('joystick_command', state);
+            }
+
+            requestAnimationFrame(scanGamepads);
+        }
+
+        // Handle Socket Echo
+        socket.on('server_echo', (msg) => {
+            // 3. Update Receiver UI
+            updateControllerUI('ctrl-recv', msg);
+
+            // --- Latency Stop Logic ---
+            if (msg.latencyStart) {
+                const now = Date.now();
+                const latency = now - msg.latencyStart;
+
+                // If it's a manual ping, flash the receiver button
+                if (msg.customSignal === "00011101") {
+                    const recvBtn = document.getElementById('recv-ping-btn');
+                    if (recvBtn) {
+                        recvBtn.classList.add('active');
+                        setTimeout(() => recvBtn.classList.remove('active'), 200);
+                    }
+                }
+
+                const timerEl = document.getElementById('latency-timer');
+                timerEl.innerText = latency + ' ms';
+                timerEl.classList.remove('measuring');
+
+                // NO TIMEOUT: Result stays visible until next press
+                if (latencyTimeout) clearTimeout(latencyTimeout);
+            }
+
+            // Update text debug
+            const pressedButtons = msg.buttons.map((b, i) => b.pressed ? i : null).filter(i => i !== null);
+            document.getElementById('data-recv').innerHTML = `
+            Received from Server:<br>
+            Timestamp: ${msg.timestamp.toFixed(2)}<br>
+            Axes: [${msg.axes.map(a => a.toFixed(2)).join(', ')}]<br>
+            Pressed: ${pressedButtons.join(', ')}
+            `;
+        });
+
+        // Start loop (even if no gamepad initially, to keep checking)
+        scanGamepads();
+
+        // --- Manual Ping Logic ---
+        document.getElementById('manual-ping-btn').addEventListener('click', () => {
+            // 1. UI Feedback
+            const timerEl = document.getElementById('latency-timer');
+            timerEl.style.display = 'block';
+            timerEl.innerText = '... (00011101)';
+            timerEl.classList.add('measuring');
+
+            // 2. Construct Fake Packet
+            const state = {
+                buttons: [], // Empty, handled by robust updateControllerUI
+                axes: [],
+                timestamp: performance.now(),
+                latencyStart: Date.now(),
+                customSignal: "00011101" // Marker for debugging
+            };
+
+            // 3. Send
+            socket.emit('joystick_command', state);
+        });
+
+    </script>
+</body>
+
+</html>
